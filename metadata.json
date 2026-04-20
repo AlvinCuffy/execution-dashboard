@@ -1,7 +1,0 @@
-{
-  "name": "Pomelli Client Portal",
-  "description": "A high-ticket business intelligence dashboard that transforms raw brand data into a forensic strategic report using Gemini AI.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
