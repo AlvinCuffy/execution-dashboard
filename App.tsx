@@ -5,6 +5,7 @@ import InputPanel from './components/InputPanel';
 import ReportPanel from './components/ReportPanel';
 import InjectionChamber from './components/InjectionChamber';
 import { generateStrategyThemes, extractDNA } from './geminiService';
+import OutreachChecklist from './components/OutreachChecklist';
 
 const DEFAULT_DATA: BrandData = {
   businessName: '',
@@ -69,8 +70,26 @@ const App: React.FC = () => {
     }
   };
 
+  if (step === 'dashboard') {
+    return (
+      <OutreachChecklist
+        onBack={() => setStep(brandData.businessName ? 'refinement' : 'injection')}
+      />
+    );
+  }
+
   if (step === 'injection') {
-    return <InjectionChamber onInitialize={handleInitializeDNA} isProcessing={isInitializing} />;
+    return (
+      <>
+        <button
+          onClick={() => setStep('dashboard')}
+          className="fixed top-4 right-4 z-50 text-[10px] font-bold text-slate-400 hover:text-blue-400 uppercase tracking-widest border border-slate-700 hover:border-blue-500/40 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded transition-all"
+        >
+          Dashboard
+        </button>
+        <InjectionChamber onInitialize={handleInitializeDNA} isProcessing={isInitializing} />
+      </>
+    );
   }
 
   return (
@@ -82,12 +101,20 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">POMELLI <span className="text-blue-600 font-light italic">DNA</span></h1>
             <p className="text-sm text-slate-500">Refinement Lab</p>
           </div>
-          <button 
-            onClick={() => setStep('injection')}
-            className="text-[10px] font-bold text-slate-400 hover:text-blue-500 uppercase tracking-widest border border-slate-100 px-2 py-1 rounded"
-          >
-            Re-Inject
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStep('dashboard')}
+              className="text-[10px] font-bold text-slate-400 hover:text-blue-500 uppercase tracking-widest border border-slate-100 px-2 py-1 rounded transition-colors"
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setStep('injection')}
+              className="text-[10px] font-bold text-slate-400 hover:text-blue-500 uppercase tracking-widest border border-slate-100 px-2 py-1 rounded"
+            >
+              Re-Inject
+            </button>
+          </div>
         </header>
         
         <InputPanel 

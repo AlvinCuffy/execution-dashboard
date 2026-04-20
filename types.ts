@@ -14,7 +14,7 @@ export interface BrandData {
   images: string[]; 
 }
 
-export type AppStep = 'injection' | 'refinement';
+export type AppStep = 'injection' | 'refinement' | 'dashboard';
 
 export interface ReportState {
   themes: string[];
