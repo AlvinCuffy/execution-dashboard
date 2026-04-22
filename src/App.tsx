@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CashFlowStrategy from "./components/CashFlowStrategy";
 
 const STORAGE_KEYS = {
   dailyLog: "omri-daily-log",
@@ -166,7 +167,7 @@ export default function OmriDashboard() {
 
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #1a1a1a", background: "#0F0F0F", position: "sticky", top: 0, zIndex: 10 }}>
-        {[{ id: "today", label: "Today" }, { id: "pipeline", label: "Pipeline" }, { id: "week", label: "Week" }].map(tab => (
+        {[{ id: "today", label: "Today" }, { id: "pipeline", label: "Pipeline" }, { id: "week", label: "Week" }, { id: "strategy", label: "Strategy" }].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "14px 0", background: "none", border: "none", borderBottom: activeTab === tab.id ? "2px solid #C9A84C" : "2px solid transparent", color: activeTab === tab.id ? "#C9A84C" : "#555", fontSize: 13, fontWeight: 600, cursor: "pointer", textTransform: "uppercase", letterSpacing: 1, transition: "all 0.2s" }}>
             {tab.label}
           </button>
@@ -320,6 +321,9 @@ export default function OmriDashboard() {
           <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "#333", letterSpacing: 1 }}>Seek first the Kingdom · Matthew 6:33</div>
         </div>
       )}
+
+      {/* STRATEGY */}
+      {activeTab === "strategy" && <CashFlowStrategy />}
 
       {/* Footer */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#0F0F0F", borderTop: "1px solid #1a1a1a", padding: "12px 16px 20px", display: "flex", justifyContent: "center" }}>
