@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import CashFlowStrategy from "./components/CashFlowStrategy";
+import TodayTab from "./components/TodayTab";
 
 const STORAGE_KEYS = {
   dailyLog: "omri-daily-log",
@@ -175,55 +176,7 @@ export default function OmriDashboard() {
       </div>
 
       {/* TODAY */}
-      {activeTab === "today" && (
-        <div style={{ padding: "20px 16px" }}>
-          <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>Daily Non-Negotiables</div>
-          {DAILY_TARGETS.map(task => {
-            const current = todayData[task.id] || 0;
-            const done = current >= task.target;
-            const pct = Math.min((current / task.target) * 100, 100);
-            return (
-              <div key={task.id} style={{ background: done ? "#111800" : "#141414", border: `1px solid ${done ? "#C9A84C33" : "#222"}`, borderRadius: 12, padding: 16, marginBottom: 10, transition: "all 0.3s" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>{task.icon}</span>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: done ? "#C9A84C" : "#F5F0E8" }}>{task.label}</div>
-                      <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>Target: {task.target} {task.unit}</div>
-                    </div>
-                  </div>
-                  {done && <div style={{ background: "#C9A84C", color: "#0F0F0F", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: 1 }}>DONE</div>}
-                </div>
-                <div style={{ height: 3, background: "#222", borderRadius: 2, marginBottom: 12 }}>
-                  <div style={{ height: "100%", width: `${pct}%`, background: done ? "#C9A84C" : "#333", borderRadius: 2, transition: "width 0.3s ease" }} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button onClick={() => decrementAction(task.id)} style={{ width: 36, height: 36, background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, color: "#666", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                  <div style={{ flex: 1, textAlign: "center", fontSize: 20, fontWeight: 800, color: done ? "#C9A84C" : "#F5F0E8" }}>
-                    {current} <span style={{ fontSize: 13, color: "#555", fontWeight: 400 }}>/ {task.target}</span>
-                  </div>
-                  <button onClick={() => incrementAction(task.id)} style={{ width: 36, height: 36, background: done ? "#C9A84C22" : "#C9A84C", border: "none", borderRadius: 8, color: done ? "#C9A84C" : "#0F0F0F", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>+</button>
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ background: "#141414", border: "1px solid #222", borderRadius: 12, padding: 16, marginTop: 20 }}>
-            <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Weekly Conversations</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button onClick={() => setWeeklyConvos((v: number) => Math.max(0, v - 1))} style={{ width: 36, height: 36, background: "#1a1a1a", border: "1px solid #333", borderRadius: 8, color: "#666", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-              <div style={{ flex: 1, textAlign: "center" }}>
-                <span style={{ fontSize: 28, fontWeight: 800, color: weeklyConvos >= WEEKLY_TARGET_CONVOS ? "#C9A84C" : "#F5F0E8" }}>{weeklyConvos}</span>
-                <span style={{ fontSize: 14, color: "#555" }}> / {WEEKLY_TARGET_CONVOS}</span>
-                <div style={{ fontSize: 11, color: "#555", marginTop: 2 }}>new conversations this week</div>
-              </div>
-              <button onClick={() => setWeeklyConvos((v: number) => v + 1)} style={{ width: 36, height: 36, background: "#C9A84C", border: "none", borderRadius: 8, color: "#0F0F0F", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>+</button>
-            </div>
-            <div style={{ height: 3, background: "#222", borderRadius: 2, marginTop: 12 }}>
-              <div style={{ height: "100%", width: `${Math.min((weeklyConvos / WEEKLY_TARGET_CONVOS) * 100, 100)}%`, background: "#C9A84C", borderRadius: 2, transition: "width 0.3s" }} />
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === "today" && <TodayTab />}
 
       {/* PIPELINE */}
       {activeTab === "pipeline" && (
