@@ -199,6 +199,20 @@ export default function TodayTab() {
   const [result, setResult] = useState("");
   const [saving, setSaving] = useState(false);
   const [modalTs, setModalTs] = useState("");
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<number>>(new Set());
+
+  const togglePhase = (id: number) => {
+    setCollapsedPhases((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allCollapsed = collapsedPhases.size === PHASES.length;
+  const toggleAll = () =>
+    setCollapsedPhases(allCollapsed ? new Set() : new Set(PHASES.map((p) => p.id)));
 
   // Load Firestore completions on mount
   useEffect(() => {
@@ -378,22 +392,48 @@ export default function TodayTab() {
 
         {/* Phase list */}
         <div style={{ padding: "20px 16px 0" }}>
+          {/* Collapse/expand all */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <button
+              onClick={toggleAll}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#555",
+                fontSize: 11,
+                cursor: "pointer",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                padding: 0,
+                fontFamily: "inherit",
+              }}
+            >
+              {allCollapsed ? "Expand All" : "Collapse All"}
+            </button>
+          </div>
+
           {PHASES.map((phase) => {
             const doneCount = phase.tasks.filter((t) => completed[t.id]).length;
             const allDone = doneCount === phase.tasks.length;
+            const isCollapsed = collapsedPhases.has(phase.id);
 
             return (
               <div key={phase.id} style={{ marginBottom: 16 }}>
-                {/* Phase header */}
-                <div
+                {/* Phase header — tap to collapse/expand */}
+                <button
+                  onClick={() => togglePhase(phase.id)}
                   style={{
+                    width: "100%",
                     background: allDone ? "#111800" : "#141414",
                     border: `1px solid ${allDone ? "#C9A84C33" : "#222"}`,
-                    borderRadius: "10px 10px 0 0",
+                    borderRadius: isCollapsed ? 10 : "10px 10px 0 0",
                     padding: "10px 14px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "border-radius 0.15s",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -430,13 +470,16 @@ export default function TodayTab() {
                       <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>{phase.time}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: allDone ? "#C9A84C" : "#444" }}>
-                    {doneCount}/{phase.tasks.length}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: allDone ? "#C9A84C" : "#444" }}>
+                      {doneCount}/{phase.tasks.length}
+                    </span>
+                    <span style={{ fontSize: 10, color: "#444" }}>{isCollapsed ? "▼" : "▲"}</span>
                   </div>
-                </div>
+                </button>
 
                 {/* Task rows */}
-                <div
+                {!isCollapsed && <div
                   style={{
                     background: "#0F0F0F",
                     border: "1px solid #1a1a1a",
@@ -553,7 +596,7 @@ export default function TodayTab() {
                       </div>
                     );
                   })}
-                </div>
+                </div>}
               </div>
             );
           })}
