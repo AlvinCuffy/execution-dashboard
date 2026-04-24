@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import CashFlowStrategy from "./components/CashFlowStrategy";
 import TodayTab from "./components/TodayTab";
+import ActivityTab from "./components/ActivityTab";
 
 const STORAGE_KEYS = {
   dailyLog: "omri-daily-log",
@@ -168,7 +169,7 @@ export default function OmriDashboard() {
 
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #1a1a1a", background: "#0F0F0F", position: "sticky", top: 0, zIndex: 10 }}>
-        {[{ id: "today", label: "Today" }, { id: "pipeline", label: "Pipeline" }, { id: "week", label: "Week" }, { id: "strategy", label: "Strategy" }].map(tab => (
+        {[{ id: "today", label: "Today" }, { id: "pipeline", label: "Pipeline" }, { id: "activity", label: "Activity" }, { id: "strategy", label: "Strategy" }].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "14px 0", background: "none", border: "none", borderBottom: activeTab === tab.id ? "2px solid #C9A84C" : "2px solid transparent", color: activeTab === tab.id ? "#C9A84C" : "#555", fontSize: 13, fontWeight: 600, cursor: "pointer", textTransform: "uppercase", letterSpacing: 1, transition: "all 0.2s" }}>
             {tab.label}
           </button>
@@ -224,56 +225,8 @@ export default function OmriDashboard() {
         </div>
       )}
 
-      {/* WEEK */}
-      {activeTab === "week" && (
-        <div style={{ padding: "20px 16px" }}>
-          <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>Last 7 Days</div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
-            {last7Days.map(day => {
-              const isToday = day.key === todayKey;
-              const full    = day.done >= DAILY_TARGETS.length;
-              const partial = day.done >= 3;
-              return (
-                <div key={day.key} style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: isToday ? "#C9A84C" : "#555", marginBottom: 6, textTransform: "uppercase" }}>{day.label}</div>
-                  <div style={{ height: 60, background: full ? "#C9A84C" : partial ? "#C9A84C44" : "#1a1a1a", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", border: isToday ? "1px solid #C9A84C" : "1px solid #222" }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: full ? "#0F0F0F" : partial ? "#C9A84C" : "#333" }}>{day.done}</span>
-                  </div>
-                  <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>{day.done}/{DAILY_TARGETS.length}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ background: "#141414", border: "1px solid #222", borderRadius: 12, padding: 16, marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 2, marginBottom: 14 }}>This Week</div>
-            {[
-              { label: "Conversations started",    value: weeklyConvos,                                            target: WEEKLY_TARGET_CONVOS },
-              { label: "Days with 3+ tasks done",  value: last7Days.filter(d => d.done >= 3).length,               target: 7 },
-              { label: "Full days completed",      value: last7Days.filter(d => d.done >= DAILY_TARGETS.length).length, target: 7 },
-            ].map(stat => (
-              <div key={stat.label} style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, color: "#F5F0E8" }}>{stat.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: stat.value >= stat.target ? "#C9A84C" : "#666" }}>{stat.value}/{stat.target}</span>
-                </div>
-                <div style={{ height: 3, background: "#222", borderRadius: 2 }}>
-                  <div style={{ height: "100%", width: `${Math.min((stat.value / stat.target) * 100, 100)}%`, background: "#C9A84C", borderRadius: 2, transition: "width 0.3s" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 12, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "#C9A84C", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>The math</div>
-            <div style={{ fontSize: 13, color: "#666", lineHeight: 1.6 }}>
-              10 DMs/day → 70/week → 280/month<br />
-              10% reply = <span style={{ color: "#C9A84C", fontWeight: 700 }}>28 conversations</span><br />
-              10% book = <span style={{ color: "#C9A84C", fontWeight: 700 }}>3 calls</span><br />
-              The actions are the job.
-            </div>
-          </div>
-          <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "#333", letterSpacing: 1 }}>Seek first the Kingdom · Matthew 6:33</div>
-        </div>
-      )}
+      {/* ACTIVITY */}
+      {activeTab === "activity" && <ActivityTab />}
 
       {/* STRATEGY */}
       {activeTab === "strategy" && <CashFlowStrategy />}
