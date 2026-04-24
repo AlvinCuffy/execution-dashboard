@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import CashFlowStrategy from "./components/CashFlowStrategy";
+import ScratchOffStrategy from "./components/ScratchOffStrategy";
 import TodayTab from "./components/TodayTab";
 import ActivityTab from "./components/ActivityTab";
 
@@ -52,6 +53,7 @@ export default function OmriDashboard() {
   const [prospects,    setProspects]    = useState(() => loadStorage(STORAGE_KEYS.prospects, []));
   const [newProspect,  setNewProspect]  = useState("");
   const [activeTab,    setActiveTab]    = useState("today");
+  const [strategyMethod, setStrategyMethod] = useState<"cashflow" | "scratchoff">("cashflow");
   const [addingProspect, setAddingProspect] = useState(false);
   const [streakDays,   setStreakDays]   = useState(0);
 
@@ -229,7 +231,36 @@ export default function OmriDashboard() {
       {activeTab === "activity" && <ActivityTab />}
 
       {/* STRATEGY */}
-      {activeTab === "strategy" && <CashFlowStrategy />}
+      {activeTab === "strategy" && (
+        <div>
+          <div style={{ padding: "16px 16px 0" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[
+                { id: "cashflow" as const, label: "Angle 01", sub: "Cash Flow Strategy" },
+                { id: "scratchoff" as const, label: "Angle 02", sub: "Scratch-Off Method" },
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setStrategyMethod(m.id)}
+                  style={{
+                    flex: 1,
+                    background: strategyMethod === m.id ? "#1a1500" : "#111",
+                    border: `1px solid ${strategyMethod === m.id ? "#C9A84C" : "#222"}`,
+                    borderRadius: 10,
+                    padding: "12px 10px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <div style={{ fontSize: 10, color: "#C9A84C", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: strategyMethod === m.id ? "#F5F0E8" : "#555" }}>{m.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          {strategyMethod === "cashflow" ? <CashFlowStrategy /> : <ScratchOffStrategy />}
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#0F0F0F", borderTop: "1px solid #1a1a1a", padding: "12px 16px 20px", display: "flex", justifyContent: "center" }}>
