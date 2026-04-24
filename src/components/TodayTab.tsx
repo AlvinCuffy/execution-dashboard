@@ -21,29 +21,36 @@ interface TimeBlock {
   bg: string;
 }
 
+export interface CardEntry {
+  taskId: string;
+  taskLabel: string;
+  phase: string;
+  phaseNumber: number;
+  notes: string;
+  prospectName: string;
+  result: string;
+  savedAt: string;
+}
+
 function getTimeBlock(): TimeBlock {
   const now = new Date();
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (mins >= 9 * 60 && mins < 14 * 60 + 30) {
+  if (mins >= 9 * 60 && mins < 14 * 60 + 30)
     return { label: "Power Block — Deep Work Time", emoji: "🟢", color: "#C9A84C", bg: "#C9A84C18" };
-  }
-  if (mins >= 14 * 60 + 30 && mins < 16 * 60 + 30) {
+  if (mins >= 14 * 60 + 30 && mins < 16 * 60 + 30)
     return { label: "School Pickup — Transitioning", emoji: "🟡", color: "#F2C94C", bg: "#F2C94C18" };
-  }
-  if (mins >= 16 * 60 + 30 && mins < 21 * 60) {
+  if (mins >= 16 * 60 + 30 && mins < 21 * 60)
     return { label: "Evening Block — Follow-ups & Admin", emoji: "🔵", color: "#56CCF2", bg: "#56CCF218" };
-  }
-  if (mins >= 21 * 60 || mins < 4 * 60) {
+  if (mins >= 21 * 60 || mins < 4 * 60)
     return { label: "Night Work — Planning & Review", emoji: "🌙", color: "#9B51E0", bg: "#9B51E018" };
-  }
   return { label: "Early Morning — Prep & Research", emoji: "⏳", color: "#6FCF97", bg: "#6FCF9718" };
 }
 
-const TODAY = new Date().toISOString().split("T")[0];
-const LOCAL_KEY = `omri-sop-${TODAY}`;
-const CARDS_KEY = `omri-cards-${TODAY}`;
+export const TODAY = new Date().toISOString().split("T")[0];
+export const LOCAL_KEY = `omri-sop-${TODAY}`;
+export const CARDS_KEY = `omri-cards-${TODAY}`;
 
-const PHASES: Phase[] = [
+export const PHASES: Phase[] = [
   {
     id: 1,
     name: "Research & Prospect",
@@ -141,9 +148,9 @@ const PHASES: Phase[] = [
   },
 ];
 
-const TOTAL_TASKS = PHASES.reduce((sum, p) => sum + p.tasks.length, 0);
+export const TOTAL_TASKS = PHASES.reduce((sum, p) => sum + p.tasks.length, 0);
 
-function loadLocal(): Record<string, boolean> {
+export function loadLocal(): Record<string, boolean> {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -152,15 +159,39 @@ function loadLocal(): Record<string, boolean> {
   }
 }
 
-function saveLocal(data: Record<string, boolean>) {
+export function saveLocal(data: Record<string, boolean>) {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function loadCardCounts(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(CARDS_KEY);
+    if (!raw) return {};
+    const cards: CardEntry[] = JSON.parse(raw);
+    const counts: Record<string, number> = {};
+    cards.forEach((c) => {
+      counts[c.taskId] = (counts[c.taskId] || 0) + 1;
+    });
+    return counts;
+  } catch {
+    return {};
+  }
+}
+
+function appendCard(card: CardEntry) {
+  try {
+    const existing: CardEntry[] = JSON.parse(localStorage.getItem(CARDS_KEY) || "[]");
+    existing.push(card);
+    localStorage.setItem(CARDS_KEY, JSON.stringify(existing));
   } catch {}
 }
 
 export default function TodayTab() {
   const [timeBlock, setTimeBlock] = useState<TimeBlock>(getTimeBlock);
   const [completed, setCompleted] = useState<Record<string, boolean>>(loadLocal);
+  const [cardCounts, setCardCounts] = useState<Record<string, number>>(loadCardCounts);
   const [modalTask, setModalTask] = useState<Task | null>(null);
   const [modalPhase, setModalPhase] = useState<Phase | null>(null);
   const [notes, setNotes] = useState("");
@@ -197,26 +228,34 @@ export default function TodayTab() {
     return () => clearInterval(id);
   }, []);
 
+  // Toggle: check if unchecked, uncheck if checked
   const toggleTask = useCallback(
     async (task: Task, phase: Phase) => {
-      if (completed[task.id]) return;
-      const next = { ...completed, [task.id]: true };
-      setCompleted(next);
-      saveLocal(next);
-      if (db) {
-        try {
-          await addDoc(collection(db, "completions"), {
-            taskId: task.id,
-            taskLabel: task.label,
-            phase: phase.name,
-            phaseNumber: phase.id,
-            completedAt: serverTimestamp(),
-            date: TODAY,
-            notes: "",
-            prospectName: "",
-            result: "",
-          });
-        } catch {}
+      const alreadyDone = completed[task.id];
+
+      if (alreadyDone) {
+        const next = { ...completed, [task.id]: false };
+        setCompleted(next);
+        saveLocal(next);
+      } else {
+        const next = { ...completed, [task.id]: true };
+        setCompleted(next);
+        saveLocal(next);
+        if (db) {
+          try {
+            await addDoc(collection(db, "completions"), {
+              taskId: task.id,
+              taskLabel: task.label,
+              phase: phase.name,
+              phaseNumber: phase.id,
+              completedAt: serverTimestamp(),
+              date: TODAY,
+              notes: "",
+              prospectName: "",
+              result: "",
+            });
+          } catch {}
+        }
       }
     },
     [completed]
@@ -239,39 +278,44 @@ export default function TodayTab() {
   const saveCard = async () => {
     if (!modalTask || !modalPhase) return;
     setSaving(true);
+
+    const cardData: CardEntry = {
+      taskId: modalTask.id,
+      taskLabel: modalTask.label,
+      phase: modalPhase.name,
+      phaseNumber: modalPhase.id,
+      notes,
+      prospectName,
+      result,
+      savedAt: new Date().toISOString(),
+    };
+
+    // Always persist to localStorage so ActivityTab can read it
+    appendCard(cardData);
+
+    // Also write to Firestore if configured
     if (db) {
       try {
         await addDoc(collection(db, "completions"), {
-          taskId: modalTask.id,
-          taskLabel: modalTask.label,
-          phase: modalPhase.name,
-          phaseNumber: modalPhase.id,
+          ...cardData,
           completedAt: serverTimestamp(),
           date: TODAY,
-          notes,
-          prospectName,
-          result,
           isCard: true,
         });
       } catch {}
-    } else {
-      try {
-        const existing = JSON.parse(localStorage.getItem(CARDS_KEY) || "[]");
-        existing.push({
-          taskId: modalTask.id,
-          taskLabel: modalTask.label,
-          phase: modalPhase.name,
-          notes,
-          prospectName,
-          result,
-          savedAt: new Date().toISOString(),
-        });
-        localStorage.setItem(CARDS_KEY, JSON.stringify(existing));
-      } catch {}
     }
+
+    // Update card count badge
+    setCardCounts((prev) => ({
+      ...prev,
+      [modalTask.id]: (prev[modalTask.id] || 0) + 1,
+    }));
+
+    // Mark task complete when a card is saved
     const next = { ...completed, [modalTask.id]: true };
     setCompleted(next);
     saveLocal(next);
+
     setSaving(false);
     closeModal();
   };
@@ -386,13 +430,7 @@ export default function TodayTab() {
                       <div style={{ fontSize: 11, color: "#555", marginTop: 1 }}>{phase.time}</div>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: allDone ? "#C9A84C" : "#444",
-                    }}
-                  >
+                  <div style={{ fontSize: 11, fontWeight: 700, color: allDone ? "#C9A84C" : "#444" }}>
                     {doneCount}/{phase.tasks.length}
                   </div>
                 </div>
@@ -409,7 +447,9 @@ export default function TodayTab() {
                 >
                   {phase.tasks.map((task, idx) => {
                     const done = !!completed[task.id];
+                    const count = cardCounts[task.id] || 0;
                     const isLast = idx === phase.tasks.length - 1;
+
                     return (
                       <div
                         key={task.id}
@@ -423,10 +463,11 @@ export default function TodayTab() {
                           transition: "background 0.25s",
                         }}
                       >
-                        {/* Circular checkbox */}
+                        {/* Circular checkbox — tap to toggle */}
                         <button
                           onClick={() => toggleTask(task, phase)}
-                          aria-label={done ? "Completed" : "Mark complete"}
+                          aria-label={done ? "Uncheck task" : "Mark complete"}
+                          title={done ? "Tap to uncheck" : "Tap to complete"}
                           style={{
                             width: 26,
                             height: 26,
@@ -436,7 +477,7 @@ export default function TodayTab() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            cursor: done ? "default" : "pointer",
+                            cursor: "pointer",
                             flexShrink: 0,
                             transition: "all 0.2s",
                             color: "#0F0F0F",
@@ -453,7 +494,7 @@ export default function TodayTab() {
                           style={{
                             flex: 1,
                             fontSize: 13,
-                            color: done ? "#444" : "#EDE8DF",
+                            color: done ? "#555" : "#EDE8DF",
                             lineHeight: 1.45,
                             textDecoration: done ? "line-through" : "none",
                             transition: "all 0.2s",
@@ -462,30 +503,53 @@ export default function TodayTab() {
                           {task.label}
                         </div>
 
-                        {/* Card (+) button */}
-                        <button
-                          onClick={() => openModal(task, phase)}
-                          aria-label="Add card"
-                          style={{
-                            width: 28,
-                            height: 28,
-                            border: "1px solid #C9A84C55",
-                            borderRadius: 6,
-                            background: "none",
-                            color: "#C9A84C",
-                            fontSize: 18,
-                            fontWeight: 400,
-                            lineHeight: 1,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            padding: 0,
-                          }}
-                        >
-                          +
-                        </button>
+                        {/* Card (+) button with count badge */}
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                          <button
+                            onClick={() => openModal(task, phase)}
+                            aria-label="Add card"
+                            style={{
+                              width: 30,
+                              height: 28,
+                              border: "1px solid #C9A84C55",
+                              borderRadius: 6,
+                              background: count > 0 ? "#C9A84C18" : "none",
+                              color: "#C9A84C",
+                              fontSize: 16,
+                              fontWeight: 400,
+                              lineHeight: 1,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 0,
+                            }}
+                          >
+                            +
+                          </button>
+                          {count > 0 && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: -6,
+                                right: -6,
+                                width: 16,
+                                height: 16,
+                                background: "#C9A84C",
+                                borderRadius: "50%",
+                                fontSize: 9,
+                                fontWeight: 800,
+                                color: "#0F0F0F",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                pointerEvents: "none",
+                              }}
+                            >
+                              {count}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -499,18 +563,10 @@ export default function TodayTab() {
       {/* Bottom sheet modal */}
       {modalTask && (
         <>
-          {/* Overlay */}
           <div
             onClick={closeModal}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.72)",
-              zIndex: 50,
-            }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", zIndex: 50 }}
           />
-
-          {/* Sheet */}
           <div
             style={{
               position: "fixed",
@@ -527,27 +583,9 @@ export default function TodayTab() {
               animation: "slideUp 0.22s ease",
             }}
           >
-            {/* Drag handle */}
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                background: "#333",
-                borderRadius: 2,
-                margin: "0 auto 20px",
-              }}
-            />
+            <div style={{ width: 36, height: 4, background: "#333", borderRadius: 2, margin: "0 auto 20px" }} />
 
-            {/* Task name */}
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: "#F5F0E8",
-                lineHeight: 1.4,
-                marginBottom: 4,
-              }}
-            >
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#F5F0E8", lineHeight: 1.4, marginBottom: 4 }}>
               {modalTask.label}
             </div>
             <div
@@ -556,23 +594,20 @@ export default function TodayTab() {
                 color: "#C9A84C",
                 textTransform: "uppercase",
                 letterSpacing: 1.5,
-                marginBottom: 22,
+                marginBottom: 4,
               }}
             >
               Phase {modalPhase?.id} — {modalPhase?.name}
             </div>
+            {(cardCounts[modalTask.id] || 0) > 0 && (
+              <div style={{ fontSize: 11, color: "#555", marginBottom: 18 }}>
+                {cardCounts[modalTask.id]} card{cardCounts[modalTask.id] > 1 ? "s" : ""} already saved — adding another
+              </div>
+            )}
+            {!(cardCounts[modalTask.id] > 0) && <div style={{ marginBottom: 18 }} />}
 
-            {/* Notes */}
             <div style={{ marginBottom: 14 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#555",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 6,
-                }}
-              >
+              <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 Notes
               </div>
               <textarea
@@ -597,17 +632,8 @@ export default function TodayTab() {
               />
             </div>
 
-            {/* Prospect Name */}
             <div style={{ marginBottom: 14 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#555",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 6,
-                }}
-              >
+              <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 Prospect Name
               </div>
               <input
@@ -629,17 +655,8 @@ export default function TodayTab() {
               />
             </div>
 
-            {/* Result */}
             <div style={{ marginBottom: 18 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#555",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 6,
-                }}
-              >
+              <div style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
                 Result
               </div>
               <input
@@ -661,20 +678,10 @@ export default function TodayTab() {
               />
             </div>
 
-            {/* Timestamp */}
-            <div
-              style={{
-                fontSize: 10,
-                color: "#333",
-                textAlign: "center",
-                marginBottom: 20,
-                letterSpacing: 0.5,
-              }}
-            >
+            <div style={{ fontSize: 10, color: "#333", textAlign: "center", marginBottom: 20, letterSpacing: 0.5 }}>
               {modalTs}
             </div>
 
-            {/* Actions */}
             <div style={{ display: "flex", gap: 10 }}>
               <button
                 onClick={saveCard}

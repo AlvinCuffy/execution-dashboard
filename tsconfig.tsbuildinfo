@@ -1,1 +1,1 @@
-{"root":["./postcss.config.js","./tailwind.config.js","./vite.config.ts","./dist/assets/index-BYO6Y00v.js","./src/App.tsx","./src/firebase.ts","./src/main.tsx","./src/components/CashFlowStrategy.tsx","./src/components/TodayTab.tsx"],"version":"5.9.3"}
+{"root":["./postcss.config.js","./tailwind.config.js","./vite.config.ts","./dist/assets/index-BfM-GKo_.js","./src/App.tsx","./src/firebase.ts","./src/main.tsx","./src/components/ActivityTab.tsx","./src/components/CashFlowStrategy.tsx","./src/components/TodayTab.tsx"],"version":"5.9.3"}
